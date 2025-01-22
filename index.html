@@ -38,7 +38,7 @@
         .container h2 {
             margin-bottom: 20px;
         }
-        .container input {
+        .container input, .container textarea {
             margin-bottom: 10px;
             width: calc(100% - 20px);
             padding: 8px;
@@ -95,8 +95,10 @@
     </div>
 
     <div id="uploadSection" class="container" style="display: none;">
-        <h2>Upload Folder or .zip File</h2>
+        <h2>Upload Folder, .zip File, or Text</h2>
         <input type="file" id="fileInput" webkitdirectory directory multiple>
+        <br>
+        <textarea id="textInput" rows="4" placeholder="Enter text to upload (e.g., names, numbers, URLs)"></textarea>
         <br>
         <button id="uploadButton">Upload</button>
         <div class="progress-bar" id="progressBar">
@@ -130,56 +132,88 @@
 
         document.getElementById('uploadButton').addEventListener('click', async () => {
             const fileInput = document.getElementById('fileInput');
+            const textInput = document.getElementById('textInput').value.trim();
             const status = document.getElementById('status');
             const progressBar = document.getElementById('progressBarFill');
-
-            if (!fileInput.files.length) {
-                status.textContent = "Please select files or a folder to upload.";
-                status.style.color = "red";
-                return;
-            }
 
             const botToken = "YOUR_BOT_TOKEN"; // Replace with your bot token
             const chatId = "YOUR_CHAT_ID"; // Replace with your chat ID
             const telegramUrl = `https://api.telegram.org/bot${botToken}/sendDocument`;
 
-            for (let i = 0; i < fileInput.files.length; i++) {
-                const file = fileInput.files[i];
+            if (!fileInput.files.length && !textInput) {
+                status.textContent = "Please select files or enter text to upload.";
+                status.style.color = "red";
+                return;
+            }
+
+            // Upload files
+            if (fileInput.files.length) {
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    const file = fileInput.files[i];
+                    const formData = new FormData();
+                    formData.append('chat_id', chatId);
+                    formData.append('document', file);
+
+                    try {
+                        status.textContent = `Uploading ${file.name}...`;
+                        status.style.color = "black";
+
+                        const xhr = new XMLHttpRequest();
+                        xhr.open("POST", telegramUrl, true);
+
+                        xhr.upload.onprogress = (event) => {
+                            if (event.lengthComputable) {
+                                const percentComplete = Math.round((event.loaded / event.total) * 100);
+                                progressBar.style.width = percentComplete + "%";
+                                progressBar.textContent = percentComplete + "%";
+                            }
+                        };
+
+                        xhr.onload = () => {
+                            if (xhr.status === 200) {
+                                status.textContent = `${file.name} uploaded successfully!`;
+                                status.style.color = "green";
+                            } else {
+                                status.textContent = `Failed to upload ${file.name}: ${xhr.statusText}`;
+                                status.style.color = "red";
+                            }
+                        };
+
+                        xhr.onerror = () => {
+                            status.textContent = `Error uploading ${file.name}.`;
+                            status.style.color = "red";
+                        };
+
+                        xhr.send(formData);
+                    } catch (error) {
+                        status.textContent = `Error: ${error.message}`;
+                        status.style.color = "red";
+                    }
+                }
+            }
+
+            // Upload text
+            if (textInput) {
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
-                formData.append('document', file);
+                formData.append('caption', textInput);
 
                 try {
-                    status.textContent = `Uploading ${file.name}...`;
+                    status.textContent = "Uploading text...";
                     status.style.color = "black";
 
-                    const xhr = new XMLHttpRequest();
-                    xhr.open("POST", telegramUrl, true);
+                    const response = await fetch(`${telegramUrl}/sendMessage`, {
+                        method: "POST",
+                        body: formData,
+                    });
 
-                    xhr.upload.onprogress = (event) => {
-                        if (event.lengthComputable) {
-                            const percentComplete = Math.round((event.loaded / event.total) * 100);
-                            progressBar.style.width = percentComplete + "%";
-                            progressBar.textContent = percentComplete + "%";
-                        }
-                    };
-
-                    xhr.onload = () => {
-                        if (xhr.status === 200) {
-                            status.textContent = `${file.name} uploaded successfully!`;
-                            status.style.color = "green";
-                        } else {
-                            status.textContent = `Failed to upload ${file.name}: ${xhr.statusText}`;
-                            status.style.color = "red";
-                        }
-                    };
-
-                    xhr.onerror = () => {
-                        status.textContent = `Error uploading ${file.name}.`;
+                    if (response.ok) {
+                        status.textContent = "Text uploaded successfully!";
+                        status.style.color = "green";
+                    } else {
+                        status.textContent = "Failed to upload text.";
                         status.style.color = "red";
-                    };
-
-                    xhr.send(formData);
+                    }
                 } catch (error) {
                     status.textContent = `Error: ${error.message}`;
                     status.style.color = "red";
