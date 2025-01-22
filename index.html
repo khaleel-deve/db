@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File DB - Upload to Telegram</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        header {
+            width: 100%;
+            text-align: center;
+            background-color: #2AABEE;
+            color: white;
+            padding: 15px 0;
+        }
+        header h1 {
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 350px;
+            margin-top: 20px;
+        }
+        .container h2 {
+            margin-bottom: 20px;
+        }
+        .container input {
+            margin-bottom: 10px;
+            width: calc(100% - 20px);
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .container button {
+            background-color: #2AABEE;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .container button:hover {
+            background-color: #229ed8;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-bar div {
+            height: 20px;
+            background-color: #2AABEE;
+            width: 0;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+        }
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>File DB</h1>
+    </header>
+
+    <div id="loginSection" class="container" style="display: block;">
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Username">
+        <br>
+        <input type="password" id="password" placeholder="Password">
+        <br>
+        <button id="loginButton">Login</button>
+        <p id="loginStatus" style="margin-top: 15px;"></p>
+    </div>
+
+    <div id="uploadSection" class="container" style="display: none;">
+        <h2>Upload File to Telegram</h2>
+        <input type="file" id="fileInput" accept=".pdf,.txt,.png,.jpg,.jpeg,.mp4,.mp3,.wav,.doc,.docx">
+        <br>
+        <button id="uploadButton">Upload</button>
+        <div class="progress-bar" id="progressBar">
+            <div id="progressBarFill">0%</div>
+        </div>
+        <p id="status" style="margin-top: 15px;"></p>
+    </div>
+
+    <footer>
+        ©Khaleel
+    </footer>
+
+    <script>
+        const loginButton = document.getElementById('loginButton');
+        const loginSection = document.getElementById('loginSection');
+        const uploadSection = document.getElementById('uploadSection');
+        const loginStatus = document.getElementById('loginStatus');
+
+        loginButton.addEventListener('click', () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username === 'Khaleel' && password === 'Khaleel') {
+                loginSection.style.display = 'none';
+                uploadSection.style.display = 'block';
+            } else {
+                loginStatus.textContent = 'Invalid username or password';
+                loginStatus.style.color = 'red';
+            }
+        });
+
+        document.getElementById('uploadButton').addEventListener('click', async () => {
+            const fileInput = document.getElementById('fileInput');
+            const status = document.getElementById('status');
+            const progressBar = document.getElementById('progressBarFill');
+
+            if (!fileInput.files.length) {
+                status.textContent = "Please select a file to upload.";
+                status.style.color = "red";
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('chat_id', '5709023689'); // Replace with your chat ID
+            formData.append('document', file);
+
+            const botToken = "8175411916:AAFJoenCQZu7CiqtzAwqIx1khr4rphh1j30"; // Replace with your bot token
+            const telegramUrl = `https://api.telegram.org/bot${botToken}/sendDocument`;
+
+            try {
+                status.textContent = "Uploading...";
+                status.style.color = "black";
+
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", telegramUrl, true);
+
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = Math.round((event.loaded / event.total) * 100);
+                        progressBar.style.width = percentComplete + "%";
+                        progressBar.textContent = percentComplete + "%";
+                    }
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status === 200) {
+                        status.textContent = "File uploaded successfully!";
+                        status.style.color = "green";
+                    } else {
+                        status.textContent = `Failed to upload file: ${xhr.statusText}`;
+                        status.style.color = "red";
+                    }
+                };
+
+                xhr.onerror = () => {
+                    status.textContent = "Error uploading file.";
+                    status.style.color = "red";
+                };
+
+                xhr.send(formData);
+            } catch (error) {
+                status.textContent = `Error: ${error.message}`;
+                status.style.color = "red";
+            }
+        });
+    </script>
+</body>
+</html>
