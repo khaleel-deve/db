@@ -95,8 +95,8 @@
     </div>
 
     <div id="uploadSection" class="container" style="display: none;">
-        <h2>Upload File to Telegram</h2>
-        <input type="file" id="fileInput" accept=".pdf,.txt,.png,.jpg,.zip,.mp4,.mp3,.wav,.doc,.docx">
+        <h2>Upload Folder or .zip File</h2>
+        <input type="file" id="fileInput" webkitdirectory directory multiple>
         <br>
         <button id="uploadButton">Upload</button>
         <div class="progress-bar" id="progressBar">
@@ -134,53 +134,56 @@
             const progressBar = document.getElementById('progressBarFill');
 
             if (!fileInput.files.length) {
-                status.textContent = "Please select a file to upload.";
+                status.textContent = "Please select files or a folder to upload.";
                 status.style.color = "red";
                 return;
             }
 
-            const file = fileInput.files[0];
-            const formData = new FormData();
-            formData.append('chat_id', '5709023689'); // Replace with your chat ID
-            formData.append('document', file);
-
-            const botToken = "8175411916:AAFJoenCQZu7CiqtzAwqIx1khr4rphh1j30"; // Replace with your bot token
+            const botToken = "YOUR_BOT_TOKEN"; // Replace with your bot token
+            const chatId = "YOUR_CHAT_ID"; // Replace with your chat ID
             const telegramUrl = `https://api.telegram.org/bot${botToken}/sendDocument`;
 
-            try {
-                status.textContent = "Uploading...";
-                status.style.color = "black";
+            for (let i = 0; i < fileInput.files.length; i++) {
+                const file = fileInput.files[i];
+                const formData = new FormData();
+                formData.append('chat_id', chatId);
+                formData.append('document', file);
 
-                const xhr = new XMLHttpRequest();
-                xhr.open("POST", telegramUrl, true);
+                try {
+                    status.textContent = `Uploading ${file.name}...`;
+                    status.style.color = "black";
 
-                xhr.upload.onprogress = (event) => {
-                    if (event.lengthComputable) {
-                        const percentComplete = Math.round((event.loaded / event.total) * 100);
-                        progressBar.style.width = percentComplete + "%";
-                        progressBar.textContent = percentComplete + "%";
-                    }
-                };
+                    const xhr = new XMLHttpRequest();
+                    xhr.open("POST", telegramUrl, true);
 
-                xhr.onload = () => {
-                    if (xhr.status === 200) {
-                        status.textContent = "File uploaded successfully!";
-                        status.style.color = "green";
-                    } else {
-                        status.textContent = `Failed to upload file: ${xhr.statusText}`;
+                    xhr.upload.onprogress = (event) => {
+                        if (event.lengthComputable) {
+                            const percentComplete = Math.round((event.loaded / event.total) * 100);
+                            progressBar.style.width = percentComplete + "%";
+                            progressBar.textContent = percentComplete + "%";
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        if (xhr.status === 200) {
+                            status.textContent = `${file.name} uploaded successfully!`;
+                            status.style.color = "green";
+                        } else {
+                            status.textContent = `Failed to upload ${file.name}: ${xhr.statusText}`;
+                            status.style.color = "red";
+                        }
+                    };
+
+                    xhr.onerror = () => {
+                        status.textContent = `Error uploading ${file.name}.`;
                         status.style.color = "red";
-                    }
-                };
+                    };
 
-                xhr.onerror = () => {
-                    status.textContent = "Error uploading file.";
+                    xhr.send(formData);
+                } catch (error) {
+                    status.textContent = `Error: ${error.message}`;
                     status.style.color = "red";
-                };
-
-                xhr.send(formData);
-            } catch (error) {
-                status.textContent = `Error: ${error.message}`;
-                status.style.color = "red";
+                }
             }
         });
     </script>
